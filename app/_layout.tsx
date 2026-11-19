@@ -1,22 +1,15 @@
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider,
+} from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import { colors } from '@/constants/theme';
-
-const navigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.bg,
-    card: colors.bg,
-    text: colors.text,
-    border: colors.border,
-    primary: colors.accent,
-  },
-};
+import { useTheme } from '@/hooks/useTheme';
 
 export {
   ErrorBoundary,
@@ -27,10 +20,24 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  const { colors, isDark } = useTheme();
+
+  const navigationTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      background: colors.bg,
+      card: colors.bg,
+      text: colors.text,
+      border: colors.border,
+      primary: colors.accent,
+    },
+  };
+
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={[styles.root, { backgroundColor: colors.bg }]}>
       <ThemeProvider value={navigationTheme}>
-        <StatusBar style="light" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
             headerShown: false,
@@ -46,6 +53,5 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
 });

@@ -1,7 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SwipeableRow } from '@/components/SwipeableRow';
-import { colors, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
+import { uk } from '@/constants/uk';
+import { useTheme } from '@/hooks/useTheme';
 import { formatRelativeTime } from '@/lib/time';
 import type { Idea } from '@/types/models';
 
@@ -12,17 +14,48 @@ type Props = {
 };
 
 export function IdeaRow({ idea, onTriage, onDelete }: Props) {
+  const { colors } = useTheme();
+
   return (
-    <SwipeableRow onSwipeRight={onTriage} onSwipeLeft={onDelete}>
+    <SwipeableRow
+      autoCommit
+      leftActions={[
+        {
+          key: 'triage',
+          label: uk.swipe.triage,
+          icon: 'corner-up-right',
+          color: colors.accent,
+          backgroundColor: colors.archiveBg,
+          onPress: onTriage,
+        },
+      ]}
+      rightActions={[
+        {
+          key: 'delete',
+          label: uk.swipe.delete,
+          icon: 'trash-2',
+          color: colors.danger,
+          backgroundColor: colors.dangerBg,
+          onPress: onDelete,
+        },
+      ]}>
       <Pressable
         onPress={onTriage}
         accessibilityRole="button"
-        accessibilityLabel={`Triage idea: ${idea.text}`}
-        style={styles.row}>
-        <View style={styles.dot} />
+        accessibilityLabel={`${uk.inbox.triageA11y}: ${idea.text}`}
+        style={[
+          styles.row,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}>
+        <View style={[styles.dot, { backgroundColor: colors.muted }]} />
         <View style={styles.body}>
-          <Text style={styles.text}>{idea.text}</Text>
-          <Text style={styles.meta}>{formatRelativeTime(idea.createdAt)}</Text>
+          <Text style={[styles.text, { color: colors.text }]}>{idea.text}</Text>
+          <Text style={[styles.meta, { color: colors.secondary }]}>
+            {formatRelativeTime(idea.createdAt)}
+          </Text>
         </View>
       </Pressable>
     </SwipeableRow>
@@ -36,31 +69,26 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: 18,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
     marginBottom: 10,
   },
   dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: colors.muted,
     marginTop: 7,
   },
   body: {
     flex: 1,
   },
   text: {
-    color: colors.text,
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '500',
   },
   meta: {
     marginTop: 6,
-    color: colors.secondary,
     fontSize: 13,
   },
 });

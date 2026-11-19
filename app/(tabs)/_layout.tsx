@@ -1,9 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
-import { colors } from '@/constants/theme';
+import { uk } from '@/constants/uk';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
@@ -28,7 +31,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inbox',
+          title: uk.tabs.inbox,
           tabBarIcon: ({ color, size }) => (
             <Feather name="inbox" size={size} color={color} />
           ),
@@ -37,7 +40,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="board"
         options={{
-          title: 'Board',
+          title: uk.tabs.board,
           tabBarIcon: ({ color, size }) => (
             <Feather name="check-square" size={size} color={color} />
           ),

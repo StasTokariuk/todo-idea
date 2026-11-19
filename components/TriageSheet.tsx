@@ -1,101 +1,217 @@
 import { useEffect, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { colors, radius, spacing } from '@/constants/theme';
-import type { Idea, TaskType } from '@/types/models';
+import { radius, spacing } from '@/constants/theme';
+import { uk } from '@/constants/uk';
+import { useTheme } from '@/hooks/useTheme';
+import { CATEGORY_PACKAGES } from '@/store/useAppStore';
+import type { Category, ConvertIdeaPayload, Idea } from '@/types/models';
 
 type Props = {
   visible: boolean;
   idea: Idea | null;
+  categories: Category[];
   onClose: () => void;
-  onConvert: (type: TaskType, externalLink?: string) => void;
+  onConvert: (payload: ConvertIdeaPayload) => void;
 };
 
-const TYPES: { key: TaskType; label: string }[] = [
-  { key: 'general', label: 'General' },
-  { key: 'study', label: 'Study' },
-  { key: 'package', label: 'Package' },
-];
-
-export function TriageSheet({ visible, idea, onClose, onConvert }: Props) {
-  const [type, setType] = useState<TaskType>('general');
+export function TriageSheet({
+  visible,
+  idea,
+  categories,
+  onClose,
+  onConvert,
+}: Props) {
+  const { colors } = useTheme();
+  const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
+  const [subtitle, setSubtitle] = useState('');
+  const [notes, setNotes] = useState('');
+  const [useDeadline, setUseDeadline] = useState(false);
+  const [deadline, setDeadline] = useState('');
   const [link, setLink] = useState('');
 
   useEffect(() => {
     if (visible) {
-      setType('general');
+      setCategoryId(categories[0]?.id || '');
+      setSubtitle('');
+      setNotes('');
+      setUseDeadline(false);
+      setDeadline('');
       setLink('');
     }
-  }, [visible, idea?.id]);
+  }, [visible, idea?.id, categories]);
+
+  const submit = () => {
+    const selected = categories.find((c) => c.id === categoryId);
+    const isPackages =
+      categoryId === CATEGORY_PACKAGES ||
+      selected?.name === uk.defaults.packages;
+    onConvert({
+      categoryId: categoryId || '',
+      subtitle,
+      description: notes,
+      deadline: useDeadline && deadline ? new Date(deadline).toISOString() : null,
+      externalLink: link,
+      hasCustomToggle: isPackages,
+      customToggleLabel: isPackages ? uk.defaults.arrivedToggle : '',
+      isCustomToggleChecked: false,
+      status: isPackages ? 'ordered' : 'pending',
+    });
+  };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <Text style={styles.kicker}>Convert to task</Text>
-          <Text style={styles.title}>{idea?.text}</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.55)' }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: colors.elevated, borderColor: colors.border },
+          ]}>
+          <View style={[styles.handle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.kicker, { color: colors.secondary }]}>
+            {uk.triage.kicker}
+          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>{idea?.text}</Text>
 
-          <Text style={styles.label}>Type</Text>
-          <View style={styles.toggleRow}>
-            {TYPES.map((item) => {
-              const active = item.key === type;
-              return (
-                <Pressable
-                  key={item.key}
-                  onPress={() => setType(item.key)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  style={[styles.toggle, active && styles.toggleActive]}>
-                  <Text style={[styles.toggleText, active && styles.toggleTextActive]}>
-                    {item.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.scroll}>
+            <Text style={[styles.label, { color: colors.secondary }]}>
+              {uk.triage.category}
+            </Text>
+            <View style={styles.chips}>
+              {categories.map((cat) => {
+                const active = cat.id === categoryId;
+                return (
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => setCategoryId(cat.id)}
+                    style={[
+                      styles.chip,
+                      {
+                        borderColor: active ? cat.accentColor : colors.border,
+                        backgroundColor: active
+                          ? `${cat.accentColor}22`
+                          : colors.surface,
+                      },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        { color: active ? colors.text : colors.secondary },
+                      ]}>
+                      {cat.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-          {type === 'study' ? (
+            <Text style={[styles.label, { color: colors.secondary }]}>
+              {uk.triage.subtitle}
+            </Text>
+            <TextInput
+              value={subtitle}
+              onChangeText={setSubtitle}
+              placeholder={uk.triage.subtitlePlaceholder}
+              placeholderTextColor={colors.muted}
+              style={[
+                styles.input,
+                { color: colors.text, borderBottomColor: colors.border },
+              ]}
+            />
+
+            <View style={styles.switchRow}>
+              <Text style={[styles.labelInline, { color: colors.secondary }]}>
+                {uk.triage.deadline}
+              </Text>
+              <Switch
+                value={useDeadline}
+                onValueChange={setUseDeadline}
+                trackColor={{ false: colors.border, true: colors.accent }}
+                thumbColor="#F4F7FB"
+              />
+            </View>
+            {useDeadline ? (
+              <TextInput
+                value={deadline}
+                onChangeText={setDeadline}
+                placeholder={uk.triage.deadlinePlaceholder}
+                placeholderTextColor={colors.muted}
+                autoCapitalize="none"
+                style={[
+                  styles.input,
+                  { color: colors.text, borderBottomColor: colors.border },
+                ]}
+              />
+            ) : null}
+
+            <Text style={[styles.label, { color: colors.secondary }]}>
+              {uk.triage.notes}
+            </Text>
+            <TextInput
+              value={notes}
+              onChangeText={setNotes}
+              placeholder={uk.triage.notesPlaceholder}
+              placeholderTextColor={colors.muted}
+              multiline
+              style={[
+                styles.notes,
+                {
+                  color: colors.text,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                },
+              ]}
+            />
+
+            <Text style={[styles.label, { color: colors.secondary }]}>
+              {uk.triage.link}
+            </Text>
             <TextInput
               value={link}
               onChangeText={setLink}
-              placeholder="Notion or study link"
+              placeholder={uk.triage.linkPlaceholder}
               placeholderTextColor={colors.muted}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
-              style={styles.input}
+              style={[
+                styles.input,
+                { color: colors.text, borderBottomColor: colors.border },
+              ]}
             />
-          ) : null}
-
-          {type === 'package' ? (
-            <Text style={styles.hint}>This will be marked as Ordered.</Text>
-          ) : null}
+          </ScrollView>
 
           <Pressable
-            style={styles.convert}
-            accessibilityRole="button"
-            onPress={() => onConvert(type, link)}>
-            <Text style={styles.convertText}>Convert</Text>
+            style={[styles.convert, { backgroundColor: colors.invert }]}
+            onPress={submit}>
+            <Text style={[styles.convertText, { color: colors.invertText }]}>
+              {uk.triage.convert}
+            </Text>
           </Pressable>
           <Pressable onPress={onClose} style={styles.cancel}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={[styles.cancelText, { color: colors.secondary }]}>
+              {uk.triage.cancel}
+            </Text>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -104,32 +220,24 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
   },
   sheet: {
-    backgroundColor: colors.elevated,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    flexGrow: 0,
+    maxHeight: '88%',
   },
   handle: {
     alignSelf: 'center',
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#2A2A2A',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   kicker: {
-    color: colors.secondary,
     fontSize: 13,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
@@ -137,75 +245,73 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    color: colors.text,
     fontSize: 20,
     fontWeight: '700',
     lineHeight: 28,
-    marginBottom: spacing.lg,
-  },
-  label: {
-    color: colors.secondary,
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 8,
     marginBottom: spacing.md,
   },
-  toggle: {
-    flex: 1,
-    paddingVertical: 12,
+  scroll: {
+    marginBottom: spacing.sm,
+  },
+  label: {
+    fontSize: 13,
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  labelInline: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    backgroundColor: colors.elevated,
   },
-  toggleActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentDim,
-  },
-  toggleText: {
-    color: colors.secondary,
+  chipText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  toggleTextActive: {
-    color: colors.text,
-  },
   input: {
-    color: colors.text,
     fontSize: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    marginBottom: spacing.md,
   },
-  hint: {
-    color: colors.secondary,
-    fontSize: 13,
-    marginBottom: spacing.md,
+  notes: {
+    minHeight: 80,
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    padding: 12,
+    fontSize: 15,
+    textAlignVertical: 'top',
+  },
+  switchRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   convert: {
     marginTop: 8,
-    backgroundColor: colors.text,
     borderRadius: radius.md,
     paddingVertical: 16,
     alignItems: 'center',
   },
   convertText: {
-    color: colors.bg,
     fontSize: 16,
     fontWeight: '700',
   },
   cancel: {
-    marginTop: 14,
+    marginTop: 12,
     alignItems: 'center',
     paddingVertical: 8,
   },
   cancelText: {
-    color: colors.secondary,
     fontSize: 15,
   },
 });

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Inbox",
-    "slug": "todo_idea",
+    "slug": "todo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,6 +37,19 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1917efff-d564-48ea-aeed-ddc49b52c69d"
+      }
+    },
+    "owner": "dozexs",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1917efff-d564-48ea-aeed-ddc49b52c69d"
     }
   }
 }
